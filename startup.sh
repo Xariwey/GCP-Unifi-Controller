@@ -1,12 +1,12 @@
 #! /bin/bash
 
-# Version 1.4.3
+# Version 1.4.5
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
 # For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
 #
 # You may use this as you see fit as long as I am credited for my work.
-# (c) 2018-2021 Petri Riihikallio Metis Oy
+# (c) 2018-2022 Petri Riihikallio Metis Oy
 
 ###########################################################
 #
@@ -127,8 +127,8 @@ fi
 apt-get -qq install -y apt-transport-https >/dev/null
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
-	echo "deb http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
-	curl -Lfs -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
+	echo "deb http://www.ui.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
+	curl -Lfs -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ui.com/unifi/unifi-repo.gpg
 	apt-get -qq update -y >/dev/null
 	
 	if apt-get -qq install -y openjdk-8-jre-headless >/dev/null; then
@@ -201,11 +201,14 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
 	apt-get -qq install -y dbus >/dev/null
-	if ! systemctl start dbus; then
+	let rounds=0
+	while [ ! systemctl start dbus && $rounds -lt 12 ]
+	do
 		echo "Trying to start dbus"
 		sleep 15
 		systemctl start dbus
-	fi
+		let rounds++
+	done
 	if timedatectl set-timezone $tz; then echo "Localtime set to ${tz}"; fi
 	systemctl reload-or-restart rsyslog
 fi
@@ -426,7 +429,7 @@ if [ -e $privkey ] && [ -e $pubcrt ] && [ -e $chain ]; then
 	
 	p12=\$(mktemp)
 	combo=\$(mktemp)
-	cat $pubcrt <(echo) $chain <(echo) $chroot > \${combo}
+	cat $pubcrt <(echo) $chain <(echo) $caroot > \${combo}
 	
 	if ! openssl pkcs12 -export \\
 	-in \${combo} \\
@@ -531,4 +534,3 @@ if [ ! -d /etc/letsencrypt/live/${dnsname} ]; then
 		systemctl start certbotrun.timer
 	fi
 fi
-
