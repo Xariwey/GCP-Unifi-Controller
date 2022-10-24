@@ -1,7 +1,7 @@
 #!/bin/sh
 #########################################
 ###                                   ###
-###              Required             ###
+###              Optional             ###
 ###     Fill this values and save     ###
 ###                                   ###
 #########################################
@@ -23,8 +23,8 @@ dnsname=
 ###########################################
 if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ]
 	then
-		echo "Edit this file and fill the required values"
-		exit
+		echo "Edit this file and fill the optional values to fully setup a Domain Name with SSL"
+		sleep 2
 fi
 clear
 account=$(gcloud config get core/account)
