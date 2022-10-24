@@ -33,7 +33,7 @@ project=$(gcloud config get core/project)
 region=$(gcloud config get compute/region)
 zone=$(gcloud config get compute/zone)
 bucket=$project-bucket
-name=unifi-server
+name=unifi-controller
 actions=("Change Project ID" "Change Region/Zone" "Continue")
 PS3="Select an Option: "
 
