@@ -6,9 +6,9 @@
 -- https://console.cloud.google.com
 * Create a new Project,
 -- https://console.cloud.google.com/projectcreate
-* Open a Shell Console,
+* Open a the Shell Console,
 -- https://shell.cloud.google.com
-* Clone this Git repository, and cd to it
+* Inside the console clone this Git repository, and cd to it
 ```sh
 $ git clone https://github.com/Xariwey/GCP-Unifi-Controller.git
 
