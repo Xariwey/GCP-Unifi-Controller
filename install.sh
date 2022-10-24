@@ -7,8 +7,7 @@
 #########################################
 # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 timezone=
-scripturl= #gs://petri-unifi/startup.sh
-ddnsurl=sfgs
+ddnsurl=
 dnsname=
 
 #####################################################################################
@@ -22,7 +21,7 @@ dnsname=
 ###     Unless u know what ur doing     ###
 ###                                     ###
 ###########################################
-if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ] || [ -z $scripturl ]
+if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ]
 	then
 		echo "Edit this file and fill the required values"
 		exit
@@ -33,6 +32,7 @@ project=$(gcloud config get core/project)
 region=$(gcloud config get compute/region)
 zone=$(gcloud config get compute/zone)
 bucket=$project-bucket
+scripturl=gs://$bucket/startup.sh
 name=unifi-controller
 actions=("Change Project ID" "Change Region/Zone" "Continue")
 PS3="Select an Option: "
@@ -96,6 +96,9 @@ function install() {
 		--default-storage-class=standard \
 		--public-access-prevention
 
+    echo
+    echo "Copying startup script into the bucket "
+    gcloud storage cp startup.sh $scripturl
 	echo
 	echo "Creating Firewall Rules for HTTP"
 	gcloud compute firewall-rules create "$name-http" \
