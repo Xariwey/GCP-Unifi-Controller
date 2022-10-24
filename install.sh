@@ -1,9 +1,9 @@
 #!/bin/sh
 #########################################
-###																		###
-###							Required							###
-###			Fill this values and save			###
-###																		###
+###                                   ###
+###              Required             ###
+###     Fill this values and save     ###
+###                                   ###
 #########################################
 # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 timezone=
@@ -11,18 +11,16 @@ scripturl= #gs://petri-unifi/startup.sh
 ddnsurl=sfgs
 dnsname=
 
-
-
-
-
 #####################################################################################
 #####################################################################################
 #####################################################################################
+
 ###########################################
-###																			###
-###								Warning								###
-###	Do not change nothing from here on	###
-###																			###
+###                                     ###
+###             Warning                 ###
+###  Do not change nothing from here on ###
+###     Unless u know what ur doing     ###
+###                                     ###
 ###########################################
 if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ] || [ -z $scripturl ]
 	then
