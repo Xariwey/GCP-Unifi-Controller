@@ -92,71 +92,71 @@ function zones() {
 function install() {
 	echo "Starting"
 	echo
-	# echo "Creating Storage Bucket"
-	# gcloud storage buckets create gs://$bucket \
-	# 	--location=$region \
-	# 	--default-storage-class=standard \
-	# 	--public-access-prevention
+	echo "Creating Storage Bucket"
+	gcloud storage buckets create gs://$bucket \
+		--location=$region \
+		--default-storage-class=standard \
+		--public-access-prevention
 
-	# echo
-	# echo "Creating Firewall Rules for HTTP"
-	# gcloud compute firewall-rules create "$name-http" \
-	# 	--allow=tcp:80,tcp:8880 \
-	# 	--description="Ports used for HTTP https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for HTTP"
+	gcloud compute firewall-rules create "$name-http" \
+		--allow=tcp:80,tcp:8880 \
+		--description="Ports used for HTTP https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating Firewall Rules for HTTPS"
-	# gcloud compute firewall-rules create "$name-https" \
-	# 	--allow=tcp:443,tcp:8443,tcp:8843,udp:443 \
-	# 	--description="Ports used for HTTP and HTTPS https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for HTTPS"
+	gcloud compute firewall-rules create "$name-https" \
+		--allow=tcp:443,tcp:8443,tcp:8843,udp:443 \
+		--description="Ports used for HTTP and HTTPS https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating Firewall Rules for Device Inform"
-	# gcloud compute firewall-rules create "$name-inform" \
-	# 	--allow=tcp:8080 \
-	# 	--description="Port for device and controller communication https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for Device Inform"
+	gcloud compute firewall-rules create "$name-inform" \
+		--allow=tcp:8080 \
+		--description="Port for device and controller communication https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating Firewall Rules for Devie STUN"
-	# gcloud compute firewall-rules create "$name-stun" \
-	# 	--allow=udp:3478 \
-	# 	--description="Port used for STUN https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for Devie STUN"
+	gcloud compute firewall-rules create "$name-stun" \
+		--allow=udp:3478 \
+		--description="Port used for STUN https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating Firewall Rules for SpeedTest"
-	# gcloud compute firewall-rules create "$name-throughput" \
-	# 	--allow=tcp:6789 \
-	# 	--description="Port used for UniFi mobile speed test https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for SpeedTest"
+	gcloud compute firewall-rules create "$name-throughput" \
+		--allow=tcp:6789 \
+		--description="Port used for UniFi mobile speed test https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating Firewall Rules for Guest Captive Portal"
-	# gcloud compute firewall-rules create "$name-captive" \
-	# 	--allow tcp:53,udp:53 \
-	# 	--description="Port used for UniFi Guest Portal https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
-	# 	--target-tags=$name
+	echo
+	echo "Creating Firewall Rules for Guest Captive Portal"
+	gcloud compute firewall-rules create "$name-captive" \
+		--allow tcp:53,udp:53 \
+		--description="Port used for UniFi Guest Portal https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
+		--target-tags=$name
 
-	# echo
-	# echo "Creating the VM"
-	# gcloud compute instances create $name-vm \
-	# 	--description="Unifi Server Controller" \
-	# 	--machine-type=e2-micro \
-	# 	--image-family debian-11 \
-	# 	--image-project debian-cloud \
-	# 	--boot-disk-device-name=$name-bootdisk \
-	# 	--boot-disk-type pd-standard \
-	# 	--boot-disk-size 10GB \
-	# 	--tags unifi-server \
-	# 	--scopes=default,storage-full \
-	# 	--shielded-secure-boot \
-	# 	--shielded-vtpm \
-	# 	--shielded-integrity-monitoring \
-	# 	--reservation-affinity=none \
-	# 	--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
+	echo
+	echo "Creating the VM"
+	gcloud compute instances create $name-vm \
+		--description="Unifi Server Controller" \
+		--machine-type=e2-micro \
+		--image-family debian-11 \
+		--image-project debian-cloud \
+		--boot-disk-device-name=$name-bootdisk \
+		--boot-disk-type pd-standard \
+		--boot-disk-size 10GB \
+		--tags unifi-server \
+		--scopes=default,storage-full \
+		--shielded-secure-boot \
+		--shielded-vtpm \
+		--shielded-integrity-monitoring \
+		--reservation-affinity=none \
+		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
 	echo
 	echo "Done go to http://$dnsname to finish the setup"
