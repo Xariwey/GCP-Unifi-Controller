@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.4.5
+# Version 1.4.6
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
 # For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
@@ -202,7 +202,7 @@ tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/comp
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
 	apt-get -qq install -y dbus >/dev/null
 	let rounds=0
-	while [ ! systemctl start dbus && $rounds -lt 12 ]
+	while ! systemctl start dbus && [ $rounds -lt 12 ]
 	do
 		echo "Trying to start dbus"
 		sleep 15
