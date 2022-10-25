@@ -71,7 +71,7 @@ if [ ! -f /swapfile ]; then
 	if [ -z ${memory} ] || [ "0${memory}" -lt "2048" ]; then
 		fallocate -l 2G /swapfile
 		chmod 600 /swapfile
-		mkswap /swapfile >/dev/null
+		mkswap /swapfile > /dev/null
 		swapon /swapfile
 		echo '/swapfile none swap sw 0 0' >> /etc/fstab
 		echo 'tmpfs /run tmpfs rw,nodev,nosuid,size=400M 0 0' >> /etc/fstab
@@ -85,39 +85,39 @@ fi
 # Install stuff
 #
 # Before we do anything lest make sure APT are up to date
-apt -qq update -y >/dev/null
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+apt -qq update -y > /dev/null
 
 # Required preliminiaries
 
 # We are using wget so lets wget it
-wget=$(dpkg-query -W --showformat='${Status}\n' wget 2>/dev/null)
+wget=$(dpkg-query -W --showformat='${Status}\n' wget > /dev/null)
 if [ "x${wget}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y wget >/dev/null; then
+	if apt -qq install -y wget > /dev/null; then
 		echo "wget installed"
 	fi
 fi
 
 # Adding CA Certificates for SSL
-ca-cert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates 2>/dev/null)
+ca-cert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates > /dev/null)
 if [ "x${ca-cert}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y ca-certificates >/dev/null; then
+	if apt -qq install -y ca-certificates > /dev/null; then
 		echo "ca-certificates installed"
 	fi
 fi
 
 # UniFi needs https support
-transport-https=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https 2>/dev/null)
+transport-https=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https > /dev/null)
 if [ "x${transport-https}" != "xinstall ok installed" ]; then
-	if apt -qq install -y apt-transport-https >/dev/null; then
+	if apt -qq install -y apt-transport-https > /dev/null; then
 		echo "Transport https support installed"
 	fi
 fi
 
 # GCP packages sign KEY
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For GCP packages
-	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg    # For GCP packages
-	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y >/dev/null    # GRUB upgrades require special flags
+	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # For GCP packages
+	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
 	rm /usr/share/misc/apt-upgraded    # Old flag file
 	touch /usr/share/misc/apt-upgraded-1
 	echo "System upgraded"
@@ -125,24 +125,24 @@ fi
 
 # Debian 9 Security archive repo sign KEY needed for non-Debian distros
 if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
-	wget -O- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg
+	wget -O- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
 	echo "Debian 9 Security archive sign KEY APT KEYs"
 fi
 
 # Mongodb-org repo sign KEY
 if [ ! -f /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ]; then
-	wget -O- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg
+	wget -O- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg > /dev/null
 	echo "Mongodb sign KEY APT Keys"
 fi
 
 # Unifi sign repo KEY
 if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
-	wget -O- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg
+	wget -O- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg > /dev/null
 	echo "Unifi sign KEY APT Keys"
 fi
 
 # Add backports if it doesn't exist
-release=$(lsb_release -a 2>/dev/null | grep "^Codename:" | cut -f 2)
+release=$(lsb_release -a > /dev/null | grep "^Codename:" | cut -f 2)
 if [ ${release} ] && [ ! -f /etc/apt/sources.list.d/backports.list ]; then
 	cat > /etc/apt/sources.list.d/backports.list <<_EOF
 deb http://deb.debian.org/debian/ ${release}-backports main
@@ -154,47 +154,47 @@ fi
 # Add Debian 9 security archive repo if it doesn't exist
 # nedeed for java 8 JDK headless on Debian 10/11
 if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
-	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list
+	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list > /dev/null
 	echo "Debian 9 Security archive REPO added to APT sources"
 fi
 
 # Add Mongodb server 3.6 repo if it doesn't exist
 # nedeed for Debian 10/11
 if [ ! -f /etc/apt/sources.list.d/mongodb-org-3.6.list ]; then
-	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list > /dev/null
 	echo "Mongodb server 3.6 REPO added to APT sources"
 fi
 
 # Add Unifi repo if it doesn't exist
 if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
-	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list > /dev/null
 	echo "Unifi REPO added to APT sources"
 fi
 
 # After adding repos lets make sure they are up to date
-apt -qq update -y >/dev/null
+apt -qq update -y > /dev/null
 
 # HAVEGEd is straightforward
-haveged=$(dpkg-query -W --showformat='${Status}\n' haveged 2>/dev/null)
+haveged=$(dpkg-query -W --showformat='${Status}\n' haveged > /dev/null)
 if [ "x${haveged}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y haveged >/dev/null; then
+	if apt -qq install -y haveged > /dev/null; then
 		echo "Haveged installed"
 	fi
 fi
-certbot=$(dpkg-query -W --showformat='${Status}\n' certbot 2>/dev/null)
+certbot=$(dpkg-query -W --showformat='${Status}\n' certbot > /dev/null)
 if [ "x${certbot}" != "xinstall ok installed" ]; then
-	if (apt -qq install -y -t ${release}-backports certbot >/dev/null) || (apt -qq install -y certbot >/dev/null); then
+	if (apt -qq install -y -t ${release}-backports certbot > /dev/null) || (apt -qq install -y certbot > /dev/null); then
 		echo "CertBot installed"
 	fi
 fi
 
 # UniFi
-unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
+unifi=$(dpkg-query -W --showformat='${Status}\n' unifi > /dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
-	if apt -qq install -y openjdk-8-jre-headless >/dev/null; then
+	if apt -qq install -y openjdk-8-jre-headless > /dev/null; then
 		echo "Java 8 installed"
 	fi
-	if apt -qq install -y unifi >/dev/null; then
+	if apt -qq install -y unifi > /dev/null; then
 		echo "Unifi installed"
 	fi
 	systemctl stop mongodb
@@ -202,9 +202,9 @@ if [ "x${unifi}" != "xinstall ok installed" ]; then
 fi
 
 # Lighttpd needs a config file and a reload
-httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd 2>/dev/null)
+httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd > /dev/null)
 if [ "x${httpd}" != "xinstall ok installed" ]; then
-	if apt -qq install -y lighttpd >/dev/null; then
+	if apt -qq install -y lighttpd > /dev/null; then
 		cat > /etc/lighttpd/conf-enabled/10-unifi-redirect.conf <<_EOF
 \$HTTP["scheme"] == "http" {
     \$HTTP["host"] =~ ".*" {
@@ -218,9 +218,9 @@ _EOF
 fi
 
 # Fail2Ban needs three files and a reload
-f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban 2>/dev/null)
+f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban > /dev/null)
 if [ "x${f2b}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y fail2ban >/dev/null; then
+	if apt -qq install -y fail2ban > /dev/null; then
 			echo "Fail2Ban installed"
 	fi
 	if [ ! -f /etc/fail2ban/filter.d/unifi-controller.conf ]; then
@@ -252,7 +252,7 @@ fi
 #
 apt -qq autoremove --purge
 apt -qq clean
-wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg
+wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
 
 ###########################################################
 #
@@ -260,7 +260,7 @@ wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor |
 #
 tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
-	apt -qq install -y dbus >/dev/null
+	apt -qq install -y dbus > /dev/null
 	let rounds=0
 	while ! systemctl start dbus && [ $rounds -lt 12 ]
 	do
@@ -322,7 +322,7 @@ if ! pgrep mongod; then
 		if [ -f /var/run/unifi/launcher.looping ]; then rm -f /var/run/unifi/launcher.looping; fi
 		echo >> $LOG
 		echo "Repairing Unifi DB on \$(date)" >> $LOG
-		su -c "/usr/bin/mongod --repair --dbpath /var/lib/unifi/db --smallfiles --logappend --logpath ${MONGOLOG} 2>>$LOG" unifi
+		su -c "/usr/bin/mongod --repair --dbpath /var/lib/unifi/db --smallfiles --logappend --logpath ${MONGOLOG} >> $LOG" unifi
 	fi
 else
 	echo "MongoDB is running. Exiting..."
@@ -494,14 +494,14 @@ if [ -e $privkey ] && [ -e $pubcrt ] && [ -e $chain ]; then
 	-inkey $privkey \\
 	-CAfile $chain \\
 	-out \${p12} -passout pass:aircontrolenterprise \\
-	-caname root -name unifi >/dev/null ; then
+	-caname root -name unifi > /dev/null ; then
 		echo "OpenSSL export failed" >> $LOG
 		exit 1
 	fi
 	
 	if ! keytool -delete -alias unifi \\
 	-keystore /var/lib/unifi/keystore \\
-	-deststorepass aircontrolenterprise >/dev/null ; then
+	-deststorepass aircontrolenterprise > /dev/null ; then
 		echo "KeyTool delete failed" >> $LOG
 	fi
 	
@@ -512,14 +512,14 @@ if [ -e $privkey ] && [ -e $pubcrt ] && [ -e $chain ]; then
 	-destkeystore /var/lib/unifi/keystore \\
 	-deststorepass aircontrolenterprise \\
 	-destkeypass aircontrolenterprise \\
-	-alias unifi -trustcacerts >/dev/null; then
+	-alias unifi -trustcacerts > /dev/null; then
 		echo "KeyTool import failed" >> $LOG
 		exit 2
 	fi
 	
 	systemctl stop unifi
 	if ! java -jar /usr/lib/unifi/lib/ace.jar import_cert \\
-	$pubcrt $chain $caroot >/dev/null; then
+	$pubcrt $chain $caroot > /dev/null; then
 		echo "Java import_cert failed" >> $LOG
 		systemctl start unifi
 		exit 3
