@@ -85,7 +85,6 @@ fi
 # Install stuff
 #
 # Before we do anything lest make sure APT are up to date
-export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
 apt -qq update -y > /dev/null
 
 # Required preliminiaries
@@ -170,7 +169,6 @@ fi
 
 # After adding repos lets make sure they are up to date
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For CGP packages
 	apt -qq update -y > /dev/null
 	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
 	rm /usr/share/misc/apt-upgraded    # Old flag file
