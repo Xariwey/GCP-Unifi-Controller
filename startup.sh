@@ -115,12 +115,9 @@ if [ "x${transport-https}" != "xinstall ok installed" ]; then
 fi
 
 # GCP packages sign KEY
-if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # For GCP packages
-	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
-	rm /usr/share/misc/apt-upgraded    # Old flag file
-	touch /usr/share/misc/apt-upgraded-1
-	echo "System upgraded"
+if [ ! -f /etc/apt/trusted.gpg.d/google-cloud.gpg ]; then
+	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
+	echo "GCP sign KEY APT KEYs"
 fi
 
 # Debian 9 Security archive repo sign KEY needed for non-Debian distros
@@ -172,7 +169,14 @@ if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
 fi
 
 # After adding repos lets make sure they are up to date
-apt -qq update -y > /dev/null
+if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For CGP packages
+	apt -qq update -y > /dev/null
+	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	rm /usr/share/misc/apt-upgraded    # Old flag file
+	touch /usr/share/misc/apt-upgraded-1
+	echo "System upgraded"
+fi
 
 # HAVEGEd is straightforward
 haveged=$(dpkg-query -W --showformat='${Status}\n' haveged > /dev/null)
