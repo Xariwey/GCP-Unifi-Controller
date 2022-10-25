@@ -82,59 +82,119 @@ fi
 
 ###########################################################
 #
-# Add backports if it doesn't exist
+# Install stuff
 #
+# Before we do anything lest make sure APT are up to date
+apt -qq update -y >/dev/null
+
+# Required preliminiaries
+
+# We are using wget so lets wget it
+wget=$(dpkg-query -W --showformat='${Status}\n' wget 2>/dev/null)
+if [ "x${wget}" != "xinstall ok installed" ]; then 
+	if apt -qq install -y wget >/dev/null; then
+		echo "wget installed"
+	fi
+fi
+
+# Adding CA Certificates for SSL
+ca-cert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates 2>/dev/null)
+if [ "x${ca-cert}" != "xinstall ok installed" ]; then 
+	if apt -qq install -y ca-certificates >/dev/null; then
+		echo "ca-certificates installed"
+	fi
+fi
+
+# UniFi needs https support
+transport-https=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https 2>/dev/null)
+if [ "x${transport-https}" != "xinstall ok installed" ]; then
+	if apt -qq install -y apt-transport-https >/dev/null; then
+		echo "Transport https support installed"
+	fi
+fi
+
+# GCP packages sign KEY
+if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For GCP packages
+	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg    # For GCP packages
+	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y >/dev/null    # GRUB upgrades require special flags
+	rm /usr/share/misc/apt-upgraded    # Old flag file
+	touch /usr/share/misc/apt-upgraded-1
+	echo "System upgraded"
+fi
+
+# Debian 9 Security archive repo sign KEY needed for non-Debian distros
+if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
+	wget -O- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg
+	echo "Debian 9 Security archive sign KEY APT KEYs"
+fi
+
+# Mongodb-org repo sign KEY
+if [ ! -f /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ]; then
+	wget -O- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg
+	echo "Mongodb sign KEY APT Keys"
+fi
+
+# Unifi sign repo KEY
+if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
+	wget -O- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg
+	echo "Unifi sign KEY APT Keys"
+fi
+
+# Add backports if it doesn't exist
 release=$(lsb_release -a 2>/dev/null | grep "^Codename:" | cut -f 2)
 if [ ${release} ] && [ ! -f /etc/apt/sources.list.d/backports.list ]; then
 	cat > /etc/apt/sources.list.d/backports.list <<_EOF
 deb http://deb.debian.org/debian/ ${release}-backports main
 deb-src http://deb.debian.org/debian/ ${release}-backports main
 _EOF
-	echo "Backports (${release}) added to APT sources"
+	echo "Backports (${release}) REPO added to APT sources"
 fi
 
-###########################################################
-#
-# Install stuff
-#
-
-# Required preliminiaries
-if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For CGP packages
-	curl -Lfs https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -    # For CGP packages
-	apt-get -qq update -y >/dev/null
-	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y >/dev/null    # GRUB upgrades require special flags
-	rm /usr/share/misc/apt-upgraded    # Old flag file
-	touch /usr/share/misc/apt-upgraded-1
-	echo "System upgraded"
+# Add Debian 9 security archive repo if it doesn't exist
+# nedeed for java 8 JDK headless on Debian 10/11
+if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
+	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list
+	echo "Debian 9 Security archive REPO added to APT sources"
 fi
+
+# Add Mongodb server 3.6 repo if it doesn't exist
+# nedeed for Debian 10/11
+if [ ! -f /etc/apt/sources.list.d/mongodb-org-3.6.list ]; then
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+	echo "Mongodb server 3.6 REPO added to APT sources"
+fi
+
+# Add Unifi repo if it doesn't exist
+if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list
+	echo "Unifi REPO added to APT sources"
+fi
+
+# After adding repos lets make sure they are up to date
+apt -qq update -y >/dev/null
 
 # HAVEGEd is straightforward
 haveged=$(dpkg-query -W --showformat='${Status}\n' haveged 2>/dev/null)
 if [ "x${haveged}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y haveged >/dev/null; then
+	if apt -qq install -y haveged >/dev/null; then
 		echo "Haveged installed"
 	fi
 fi
 certbot=$(dpkg-query -W --showformat='${Status}\n' certbot 2>/dev/null)
 if [ "x${certbot}" != "xinstall ok installed" ]; then
-if (apt-get -qq install -y -t ${release}-backports certbot >/dev/null) || (apt-get -qq install -y certbot >/dev/null); then
+	if (apt -qq install -y -t ${release}-backports certbot >/dev/null) || (apt -qq install -y certbot >/dev/null); then
 		echo "CertBot installed"
 	fi
 fi
 
-# UniFi needs https support, custom repo and APT update first
-apt-get -qq install -y apt-transport-https >/dev/null
+# UniFi
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
-	echo "deb http://www.ui.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
-	curl -Lfs -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ui.com/unifi/unifi-repo.gpg
-	apt-get -qq update -y >/dev/null
-	
-	if apt-get -qq install -y openjdk-8-jre-headless >/dev/null; then
+	if apt -qq install -y openjdk-8-jre-headless >/dev/null; then
 		echo "Java 8 installed"
 	fi
-	if apt-get -qq install -y unifi >/dev/null; then
+	if apt -qq install -y unifi >/dev/null; then
 		echo "Unifi installed"
 	fi
 	systemctl stop mongodb
@@ -144,7 +204,7 @@ fi
 # Lighttpd needs a config file and a reload
 httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd 2>/dev/null)
 if [ "x${httpd}" != "xinstall ok installed" ]; then
-	if apt-get -qq install -y lighttpd >/dev/null; then
+	if apt -qq install -y lighttpd >/dev/null; then
 		cat > /etc/lighttpd/conf-enabled/10-unifi-redirect.conf <<_EOF
 \$HTTP["scheme"] == "http" {
     \$HTTP["host"] =~ ".*" {
@@ -160,7 +220,7 @@ fi
 # Fail2Ban needs three files and a reload
 f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban 2>/dev/null)
 if [ "x${f2b}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y fail2ban >/dev/null; then
+	if apt -qq install -y fail2ban >/dev/null; then
 			echo "Fail2Ban installed"
 	fi
 	if [ ! -f /etc/fail2ban/filter.d/unifi-controller.conf ]; then
@@ -192,7 +252,7 @@ fi
 #
 apt -qq autoremove --purge
 apt -qq clean
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg
 
 ###########################################################
 #
@@ -200,7 +260,7 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 #
 tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
-	apt-get -qq install -y dbus >/dev/null
+	apt -qq install -y dbus >/dev/null
 	let rounds=0
 	while ! systemctl start dbus && [ $rounds -lt 12 ]
 	do
@@ -320,35 +380,33 @@ fi
 
 ###########################################################
 #
-# Adjust Java heap (advanced setup)
+# Set up daily update of startup.sh script at 01:00
 #
-# xms=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/xms")
-# xmx=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/xmx")
-# if [ ${xms} ] || [ ${xmx} ]; then touch /usr/share/misc/java-heap-adjusted; fi
-#
-# if [ -e /usr/share/misc/java-heap-adjusted ]; then
-#	 if [ "0${xms}" -lt 100 ]; then xms=1024; fi
-#	 if grep -e "^\s*unifi.xms=[0-9]" /var/lib/unifi/system.properties >/dev/null; then
-#	 	sed -i -e "s/^[[:space:]]*unifi.xms=[[:digit:]]\+/unifi.xms=${xms}/" /var/lib/unifi/system.properties
-#	 else
-#	 	echo "unifi.xms=${xms}" >>/var/lib/unifi/system.properties
-#	 fi
-#	 message=" xms=${xms}"
-#	 
-#	 if [ "0${xmx}" -lt "${xms}" ]; then xmx=${xms}; fi
-#	 if grep -e "^\s*unifi.xmx=[0-9]" /var/lib/unifi/system.properties >/dev/null; then
-#	 	sed -i -e "s/^[[:space:]]*unifi.xmx=[[:digit:]]\+/unifi.xmx=${xmx}/" /var/lib/unifi/system.properties
-#	 else
-#	 	echo "unifi.xmx=${xmx}" >>/var/lib/unifi/system.properties
-#	 fi
-#	 message="${message} xmx=${xmx}"
-#	 
-#	 if [ -n "${message}" ]; then
-#	 	echo "Java heap set to:${message}"
-#	 fi
-#	 systemctl restart unifi
-# fi
+bucket=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/bucket")
+if [ ${bucket} ]; then
+	cat > /etc/systemd/system/stup-script-update.service <<_EOF
+[Unit]
+Description=Daily update of startup.sh script service
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/gsutil cp https://github.com/Xariwey/GCP-Unifi-Controller/blob/master/startup.sh gs://$bucket
+_EOF
 
+	cat > /etc/systemd/system/stup-script-update.timer <<_EOF
+[Unit]
+Description=Daily update of startup.sh script timer
+[Timer]
+OnCalendar=1:00
+RandomizedDelaySec=30m
+[Install]
+WantedBy=timers.target
+_EOF
+	systemctl daemon-reload
+	systemctl start stup-script-update.timer
+	echo "Update startup.sh to ${bucket} set up"
+fi
 
 ###########################################################
 #
