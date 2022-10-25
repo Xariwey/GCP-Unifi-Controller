@@ -169,9 +169,11 @@ fi
 
 # After adding repos lets make sure they are up to date
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	echo "Updating packages"
 	apt -qq update -y > /dev/null
-	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	echo "Upgrading packages... this may take a several minutes..."
 	apt -qq upgrade -y > /dev/null
+	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
 	rm /usr/share/misc/apt-upgraded    # Old flag file
 	touch /usr/share/misc/apt-upgraded-1
 	echo "System upgraded"
