@@ -115,25 +115,25 @@ fi
 
 # GCP packages sign KEY
 if [ ! -f /etc/apt/trusted.gpg.d/google-cloud.gpg ]; then
-	wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
+	wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
 	echo "GCP sign KEY APT KEYs"
 fi
 
 # Debian 9 Security archive repo sign KEY needed for non-Debian distros
 if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
-	wget -O- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
+	wget -qO- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
 	echo "Debian 9 Security archive sign KEY APT KEYs"
 fi
 
 # Mongodb-org repo sign KEY
 if [ ! -f /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ]; then
-	wget -O- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg > /dev/null
+	wget -qO- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg > /dev/null
 	echo "Mongodb sign KEY APT Keys"
 fi
 
 # Unifi sign repo KEY
 if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
-	wget -O- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg > /dev/null
+	wget -qO- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg > /dev/null
 	echo "Unifi sign KEY APT Keys"
 fi
 
@@ -257,7 +257,7 @@ fi
 #
 apt -qq autoremove --purge
 apt -qq clean
-wget -O- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
+wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
 
 ###########################################################
 #
