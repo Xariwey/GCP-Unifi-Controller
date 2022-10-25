@@ -171,6 +171,7 @@ fi
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
 	apt -qq update -y > /dev/null
 	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	apt -qq upgrade -y > /dev/null
 	rm /usr/share/misc/apt-upgraded    # Old flag file
 	touch /usr/share/misc/apt-upgraded-1
 	echo "System upgraded"
@@ -183,6 +184,8 @@ if [ "x${haveged}" != "xinstall ok installed" ]; then
 		echo "Haveged installed"
 	fi
 fi
+
+# Certbot
 certbot=$(dpkg-query -W --showformat='${Status}\n' certbot > /dev/null)
 if [ "x${certbot}" != "xinstall ok installed" ]; then
 	if (apt -qq install -y -t ${release}-backports certbot > /dev/null) || (apt -qq install -y certbot > /dev/null); then
