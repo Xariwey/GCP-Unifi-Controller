@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.5.0
+# Version 1.5.1
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
 # For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
@@ -87,6 +87,8 @@ fi
 # Before we do anything lest make sure APT are up to date
 apt-get -qq update -y > /dev/null
 
+# Required preliminiaries
+
 # Adding lsb_release
 lsbrelease=$(dpkg-query -W --showformat='${Status}\n' lsb-release > /dev/null)
 if [ "x${lsbrelease}" != "xinstall ok installed" ]; then 
@@ -170,16 +172,6 @@ fi
 if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
 	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list > /dev/null
 	echo "Unifi REPO added to APT sources"
-fi
-
-# Required preliminiaries
-if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	echo "Upgrading system ..."
-	apt-get -qq update -y > /dev/null
-	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
-	rm /usr/share/misc/apt-upgraded    # Old flag file
-	touch /usr/share/misc/apt-upgraded-1
-	echo "System upgraded"
 fi
 
 # UniFi
@@ -569,6 +561,14 @@ fi
 #
 # APT maintenance (runs only at reboot)
 #
+if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	echo "Upgrading system ..."
+	apt-get -qq update -y > /dev/null
+	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	rm /usr/share/misc/apt-upgraded    # Old flag file
+	touch /usr/share/misc/apt-upgraded-1
+	echo "System upgraded"
+fi
 apt-get -qq autoremove -y --purge
 apt-get -qq autoclean -y
 apt-get -qq clean -y
