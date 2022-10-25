@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.4.6
+# Version 1.5.0
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
 # For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
@@ -85,14 +85,20 @@ fi
 # Install stuff
 #
 # Before we do anything lest make sure APT are up to date
-apt -qq update -y > /dev/null
+apt-get -qq update -y > /dev/null
 
-# Required preliminiaries
+# Adding lsb_release
+lsbrelease=$(dpkg-query -W --showformat='${Status}\n' lsb-release > /dev/null)
+if [ "x${lsbrelease}" != "xinstall ok installed" ]; then 
+	if apt-get -qq install -y lsb-release > /dev/null; then
+		echo "lsb_release installed"
+	fi
+fi
 
 # We are using wget so lets wget it
 wget=$(dpkg-query -W --showformat='${Status}\n' wget > /dev/null)
 if [ "x${wget}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y wget > /dev/null; then
+	if apt-get -qq install -y wget > /dev/null; then
 		echo "wget installed"
 	fi
 fi
@@ -100,7 +106,7 @@ fi
 # Adding CA Certificates for SSL
 cacert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates > /dev/null)
 if [ "x${cacert}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y ca-certificates > /dev/null; then
+	if apt-get -qq install -y ca-certificates > /dev/null; then
 		echo "ca-certificates installed"
 	fi
 fi
@@ -108,7 +114,7 @@ fi
 # UniFi needs https support
 transporthttps=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https > /dev/null)
 if [ "x${transporthttps}" != "xinstall ok installed" ]; then
-	if apt -qq install -y apt-transport-https > /dev/null; then
+	if apt-get -qq install -y apt-transport-https > /dev/null; then
 		echo "Transport https support installed"
 	fi
 fi
@@ -138,7 +144,7 @@ if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
 fi
 
 # Add backports if it doesn't exist
-release=$(lsb_release -a > /dev/null | grep "^Codename:" | cut -f 2)
+release=$(lsb_release -c | cut -f 2)
 if [ ${release} ] && [ ! -f /etc/apt/sources.list.d/backports.list ]; then
 	cat > /etc/apt/sources.list.d/backports.list <<_EOF
 deb http://deb.debian.org/debian/ ${release}-backports main
@@ -155,7 +161,6 @@ if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
 fi
 
 # Add Mongodb server 3.6 repo if it doesn't exist
-# nedeed for Debian 10/11
 if [ ! -f /etc/apt/sources.list.d/mongodb-org-3.6.list ]; then
 	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list > /dev/null
 	echo "Mongodb server 3.6 REPO added to APT sources"
@@ -167,22 +172,34 @@ if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
 	echo "Unifi REPO added to APT sources"
 fi
 
-# After adding repos lets make sure they are up to date
+# Required preliminiaries
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	echo "Updating packages"
-	apt -qq update -y > /dev/null
-	echo "Upgrading packages... this may take a several minutes..."
-	apt -qq upgrade -y > /dev/null
-	DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	echo "Upgrading system ..."
+	apt-get -qq update -y > /dev/null
+	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
 	rm /usr/share/misc/apt-upgraded    # Old flag file
 	touch /usr/share/misc/apt-upgraded-1
 	echo "System upgraded"
 fi
 
+# UniFi
+unifi=$(dpkg-query -W --showformat='${Status}\n' unifi > /dev/null)
+if [ "x${unifi}" != "xinstall ok installed" ]; then
+	apt-get -qq update -y > /dev/null
+	if apt-get -qq install -y openjdk-8-jre-headless > /dev/null; then
+		echo "Java 8 installed"
+	fi
+	if apt-get -qq install -y unifi > /dev/null; then
+		echo "Unifi installed"
+	fi
+	systemctl stop mongodb
+	systemctl disable mongodb
+fi
+
 # HAVEGEd is straightforward
 haveged=$(dpkg-query -W --showformat='${Status}\n' haveged > /dev/null)
 if [ "x${haveged}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y haveged > /dev/null; then
+	if apt-get -qq install -y haveged > /dev/null; then
 		echo "Haveged installed"
 	fi
 fi
@@ -190,28 +207,15 @@ fi
 # Certbot
 certbot=$(dpkg-query -W --showformat='${Status}\n' certbot > /dev/null)
 if [ "x${certbot}" != "xinstall ok installed" ]; then
-	if (apt -qq install -y -t ${release}-backports certbot > /dev/null) || (apt -qq install -y certbot > /dev/null); then
+	if (apt-get -qq install -y -t ${release}-backports certbot > /dev/null) || (apt-get -qq install -y certbot > /dev/null); then
 		echo "CertBot installed"
 	fi
-fi
-
-# UniFi
-unifi=$(dpkg-query -W --showformat='${Status}\n' unifi > /dev/null)
-if [ "x${unifi}" != "xinstall ok installed" ]; then
-	if apt -qq install -y openjdk-8-jre-headless > /dev/null; then
-		echo "Java 8 installed"
-	fi
-	if apt -qq install -y unifi > /dev/null; then
-		echo "Unifi installed"
-	fi
-	systemctl stop mongodb
-	systemctl disable mongodb
 fi
 
 # Lighttpd needs a config file and a reload
 httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd > /dev/null)
 if [ "x${httpd}" != "xinstall ok installed" ]; then
-	if apt -qq install -y lighttpd > /dev/null; then
+	if apt-get -qq install -y lighttpd > /dev/null; then
 		cat > /etc/lighttpd/conf-enabled/10-unifi-redirect.conf <<_EOF
 \$HTTP["scheme"] == "http" {
     \$HTTP["host"] =~ ".*" {
@@ -227,7 +231,7 @@ fi
 # Fail2Ban needs three files and a reload
 f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban > /dev/null)
 if [ "x${f2b}" != "xinstall ok installed" ]; then 
-	if apt -qq install -y fail2ban > /dev/null; then
+	if apt-get -qq install -y fail2ban > /dev/null; then
 			echo "Fail2Ban installed"
 	fi
 	if [ ! -f /etc/fail2ban/filter.d/unifi-controller.conf ]; then
@@ -255,19 +259,11 @@ fi
 
 ###########################################################
 #
-# APT maintenance (runs only at reboot)
-#
-apt -qq autoremove --purge
-apt -qq clean
-wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
-
-###########################################################
-#
 # Set the time zone
 #
 tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
-	apt -qq install -y dbus > /dev/null
+	apt-get -qq install -y dbus > /dev/null
 	let rounds=0
 	while ! systemctl start dbus && [ $rounds -lt 12 ]
 	do
@@ -278,37 +274,6 @@ if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
 	done
 	if timedatectl set-timezone $tz; then echo "Localtime set to ${tz}"; fi
 	systemctl reload-or-restart rsyslog
-fi
-
-###########################################################
-#
-# Set up unattended upgrades after 04:00 with automatic reboots
-#
-if [ ! -f /etc/apt/apt.conf.d/51unattended-upgrades-unifi ]; then
-	cat > /etc/apt/apt.conf.d/51unattended-upgrades-unifi <<_EOF
-Acquire::AllowReleaseInfoChanges "true";
-Unattended-Upgrade::Origins-Pattern {
-	"o=Debian,a=stable";
-	"c=ubiquiti";
-};
-Unattended-Upgrade::Remove-Unused-Dependencies "true";
-Unattended-Upgrade::Automatic-Reboot "true";
-_EOF
-
-	cat > /etc/systemd/system/timers.target.wants/apt-daily-upgrade.timer <<_EOF
-[Unit]
-Description=Daily apt upgrade and clean activities
-After=apt-daily.timer
-[Timer]
-OnCalendar=4:00
-RandomizedDelaySec=30m
-Persistent=true
-[Install]
-WantedBy=timers.target
-_EOF
-	systemctl daemon-reload
-	systemctl reload-or-restart unattended-upgrades
-	echo "Unattended upgrades set up"
 fi
 
 ###########################################################
@@ -387,13 +352,13 @@ fi
 
 ###########################################################
 #
-# Set up daily update of startup.sh script at 01:00
+# Set up daily update of startup script at 02:00
 #
 bucket=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/bucket")
 if [ ${bucket} ]; then
 	cat > /etc/systemd/system/stup-script-update.service <<_EOF
 [Unit]
-Description=Daily update of startup.sh script service
+Description=Daily update of startup script service
 After=network-online.target
 Wants=network-online.target
 [Service]
@@ -403,16 +368,16 @@ _EOF
 
 	cat > /etc/systemd/system/stup-script-update.timer <<_EOF
 [Unit]
-Description=Daily update of startup.sh script timer
+Description=Daily update of startup script timer
 [Timer]
-OnCalendar=1:00
+OnCalendar=2:00
 RandomizedDelaySec=30m
 [Install]
 WantedBy=timers.target
 _EOF
 	systemctl daemon-reload
 	systemctl start stup-script-update.timer
-	echo "Update startup.sh to ${bucket} set up"
+	echo "Update startup script to ${bucket} set up"
 fi
 
 ###########################################################
@@ -599,3 +564,12 @@ if [ ! -d /etc/letsencrypt/live/${dnsname} ]; then
 		systemctl start certbotrun.timer
 	fi
 fi
+
+###########################################################
+#
+# APT maintenance (runs only at reboot)
+#
+apt-get -qq autoremove -y --purge
+apt-get -qq autoclean -y
+apt-get -qq clean -y
+wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null

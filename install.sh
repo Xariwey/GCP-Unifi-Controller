@@ -160,6 +160,51 @@ function install() {
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
 	echo
+	echo "Creating Auto Patch Deployment for the $name VM"
+	cat > $name-vm_patch_deployment.json <<_EOF
+{
+  "description": "$name VM Auto Patch-Deployments",
+  "instanceFilter": {
+    "instances": ["zones/$zone/instances/$name-vm"]
+  },
+  "patchConfig": {
+    "rebootConfig": "DEFAULT",
+    "apt": {
+      "type": "UPGRADE"
+    },
+    "yum": {
+    },
+    "zypper": {
+    },
+    "windowsUpdate": {
+    }
+  },
+  "duration": "3600s",
+  "recurringSchedule": {
+    "timeZone": {
+      "id": "$timezone"
+    },
+    "timeOfDay": {
+      "hours": 4
+    },
+    "frequency": "WEEKLY",
+    "weekly": {
+      "dayOfWeek": "MONDAY"
+    }
+  },
+  "rollout": {
+    "mode": "ZONE_BY_ZONE",
+    "disruptionBudget": {
+      "fixed": 1
+    }
+  },
+  "state": "ACTIVE"
+}
+_EOF
+	gcloud compute os-config patch-deployments create $name-vm \
+	--file=$name-vm_patch_deployment.json
+
+	echo
 	echo "Done go to http://$dnsname to finish the setup"
 }
 
