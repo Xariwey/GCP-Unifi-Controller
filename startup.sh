@@ -98,16 +98,16 @@ if [ "x${wget}" != "xinstall ok installed" ]; then
 fi
 
 # Adding CA Certificates for SSL
-ca-cert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates > /dev/null)
-if [ "x${ca-cert}" != "xinstall ok installed" ]; then 
+cacert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates > /dev/null)
+if [ "x${cacert}" != "xinstall ok installed" ]; then 
 	if apt -qq install -y ca-certificates > /dev/null; then
 		echo "ca-certificates installed"
 	fi
 fi
 
 # UniFi needs https support
-transport-https=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https > /dev/null)
-if [ "x${transport-https}" != "xinstall ok installed" ]; then
+transporthttps=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https > /dev/null)
+if [ "x${transporthttps}" != "xinstall ok installed" ]; then
 	if apt -qq install -y apt-transport-https > /dev/null; then
 		echo "Transport https support installed"
 	fi
