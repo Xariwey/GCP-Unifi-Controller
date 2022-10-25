@@ -137,7 +137,7 @@ function install() {
 	echo
 	echo "Creating Firewall Rules for Guest Captive Portal"
 	gcloud compute firewall-rules create "$name-captive" \
-		--allow tcp:53,udp:53 \
+		--allow=tcp:53,udp:53 \
 		--description="Port used for UniFi Guest Portal https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used" \
 		--target-tags=$name
 
@@ -146,12 +146,12 @@ function install() {
 	gcloud compute instances create $name-vm \
 		--description="Unifi Server Controller" \
 		--machine-type=e2-micro \
-		--image-family debian-11 \
-		--image-project debian-cloud \
+		--image-family=debian-11 \
+		--image-project=debian-cloud \
 		--boot-disk-device-name=$name-bootdisk \
-		--boot-disk-type pd-standard \
-		--boot-disk-size 10GB \
-		--tags unifi-server \
+		--boot-disk-type=pd-standard \
+		--boot-disk-size=10GB \
+		--tags=$name \
 		--scopes=default,storage-full \
 		--shielded-secure-boot \
 		--shielded-vtpm \
