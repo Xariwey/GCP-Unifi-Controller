@@ -119,13 +119,21 @@ if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
 	echo "Added - Unifi REPO added to APT sources"
 fi
 
+# Installing Google Ops Agent and OS Agent"
+opsagent=$(dpkg-query -W --showformat='${Status}\n' google-cloud-ops-agent 2> /dev/null)
+if [ "x${opsagent}" != "xinstall ok installed" ]; then 
+	apt-get -qq install -y google-osconfig-agent > /dev/null
+	echo "Google OS Config Agent installed"
+	curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+	(bash add-google-cloud-ops-agent-repo.sh --also-install --uninstall-standalone-logging-agent --uninstall-standalone-monitoring-agent > /dev/null)
+	echo "Google Ops Agent Installed"
+fi
+
 # Required preliminiaries
 if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
 	curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # No required but leaving it here just to be safe
 	echo "Looking for system updates"
 	apt-get -qq update -y > /dev/null
-	apt-get -qq install -y google-osconfig-agent > /dev/null    # Required by google to monitor the VM
-	echo "Google OS Config Agent installed"
 	echo "APT Upgrading..."
 	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
 	rm /usr/share/misc/apt-upgraded    # Old flag file

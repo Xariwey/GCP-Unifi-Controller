@@ -168,14 +168,17 @@ function install() {
 		--reservation-affinity=none \
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
-	echo
-	echo "Enabling Ops Agent"
-	cat > agents_to_install.csv <<_EOF
-"projects/${project}/zones/$zone/instances/$name-vm","[{""type"":""ops-agent""}]"
-_EOF
-	curl -sSO https://dl.google.com/cloudagents/mass-provision-google-cloud-ops-agents.py
-	sleep 10 # giving time to the VM to properly boot
-	python3 mass-provision-google-cloud-ops-agents.py --file agents_to_install.csv
+	curl -sSO https://cloud.google.com/static/stackdriver/docs/set-permissions.sh
+	(bash set-permissions.sh --project=$project)
+
+# Better to do this inside VM
+# 	echo
+# 	echo "Enabling Ops Agent"
+# 	cat > agents_to_install.csv <<_EOF
+# "projects/${project}/zones/$zone/instances/$name-vm","[{""type"":""ops-agent""}]"
+# _EOF
+# 	curl -sSO https://dl.google.com/cloudagents/mass-provision-google-cloud-ops-agents.py
+# 	python3 mass-provision-google-cloud-ops-agents.py --file agents_to_install.csv
 
 	echo
 	echo "Creating Auto Patch Deployment for the $name VM"
