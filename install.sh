@@ -96,9 +96,10 @@ function install() {
 		--default-storage-class=standard \
 		--public-access-prevention
 
-    echo
-    echo "Copying startup script into the bucket "
-    gcloud storage cp startup.sh $scripturl
+	echo
+	echo "Copying startup script into the bucket "
+	gcloud storage cp startup.sh $scripturl
+
 	echo
 	echo "Creating Firewall Rules for HTTP"
 	gcloud compute firewall-rules create "$name-http" \
@@ -142,6 +143,14 @@ function install() {
 		--target-tags=$name
 
 	echo
+	echo "Enabling VM Manager"
+	gcloud services enable osconfig.googleapis.com
+	gcloud services enable containeranalysis.googleapis.com
+	gcloud compute project-info add-metadata \
+  	--project=$project \
+  	--metadata=enable-osconfig=TRUE
+
+	echo
 	echo "Creating the VM"
 	gcloud compute instances create $name-vm \
 		--description="Unifi Server Controller" \
@@ -158,6 +167,15 @@ function install() {
 		--shielded-integrity-monitoring \
 		--reservation-affinity=none \
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
+
+	echo
+	echo "Enabling Ops Agent"
+	cat > agents_to_install.csv <<_EOF
+"projects/${project}/zones/$zone/instances/$name-vm","[{""type"":""ops-agent""}]"
+_EOF
+	curl -sSO https://dl.google.com/cloudagents/mass-provision-google-cloud-ops-agents.py
+	sleep 10 # giving time to the VM to properly boot
+	python3 mass-provision-google-cloud-ops-agents.py --file agents_to_install.csv
 
 	echo
 	echo "Creating Auto Patch Deployment for the $name VM"
