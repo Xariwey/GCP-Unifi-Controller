@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.5.1
+# Version 1.5.2
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
 # For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
@@ -84,98 +84,82 @@ fi
 #
 # Install stuff
 #
-# Before we do anything lest make sure APT are up to date
-apt-get -qq update -y > /dev/null
+
+# Nedeed for java 8 JDK headless on Debian 10/11
+# Debian 9 Security archive repo sign KEY needed for non-Debian distros
+# Add Debian 9 security archive repo if it doesn't exist
+if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
+	curl -fsSL https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
+	echo "Added - Debian 9 Security archive sign KEY APT KEYs"
+fi
+if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
+	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list > /dev/null
+	echo "Added - Debian 9 Security archive REPO added to APT sources"
+fi
+
+# Mongodb-org repo sign KEY
+# Add Mongodb server 3.6 repo if it doesn't exist
+if [ ! -f /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ]; then
+	curl -fsSL https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg > /dev/null
+	echo "Added - Mongodb sign KEY APT Keys"
+fi
+if [ ! -f /etc/apt/sources.list.d/mongodb-org-3.6.list ]; then
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list > /dev/null
+	echo "Added - Mongodb server 3.6 REPO added to APT sources"
+fi
+
+# Unifi sign repo KEY
+# Add Unifi repo if it doesn't exist
+if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
+	curl -fsSL https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/unifi-repo.gpg > /dev/null
+	echo "Added - Unifi sign KEY APT Keys"
+fi
+if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
+	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list > /dev/null
+	echo "Added - Unifi REPO added to APT sources"
+fi
 
 # Required preliminiaries
+if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # No required but leaving it here just to be safe
+	echo "Looking for system updates"
+	apt-get -qq update -y > /dev/null
+	apt-get -qq install -y google-osconfig-agent > /dev/null    # Required by google to monitor the VM
+	echo "Google OS Config Agent installed"
+	echo "APT Upgrading..."
+	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+	rm /usr/share/misc/apt-upgraded    # Old flag file
+	touch /usr/share/misc/apt-upgraded-1
+	echo "System upgraded"
+fi
 
-# Adding lsb_release
-lsbrelease=$(dpkg-query -W --showformat='${Status}\n' lsb-release > /dev/null)
-if [ "x${lsbrelease}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y lsb-release > /dev/null; then
-		echo "lsb_release installed"
+# HAVEGEd is straightforward
+haveged=$(dpkg-query -W --showformat='${Status}\n' haveged 2> /dev/null)
+if [ "x${haveged}" != "xinstall ok installed" ]; then 
+	if apt-get -qq install -y haveged > /dev/null; then
+		echo "Haveged installed"
 	fi
 fi
 
-# We are using wget so lets wget it
-wget=$(dpkg-query -W --showformat='${Status}\n' wget > /dev/null)
-if [ "x${wget}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y wget > /dev/null; then
-		echo "wget installed"
-	fi
-fi
-
-# Adding CA Certificates for SSL
-cacert=$(dpkg-query -W --showformat='${Status}\n' ca-certificates > /dev/null)
-if [ "x${cacert}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y ca-certificates > /dev/null; then
-		echo "ca-certificates installed"
+# Certbot
+certbot=$(dpkg-query -W --showformat='${Status}\n' certbot 2> /dev/null)
+if [ "x${certbot}" != "xinstall ok installed" ]; then
+	release=$(lsb_release -c 2>/dev/null | cut -f 2)
+	if (apt-get -qq install -y -t ${release}-backports certbot > /dev/null) || (apt-get -qq install -y certbot > /dev/null); then
+		echo "CertBot installed"
 	fi
 fi
 
 # UniFi needs https support
-transporthttps=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https > /dev/null)
+transporthttps=$(dpkg-query -W --showformat='${Status}\n' apt-transport-https 2> /dev/null)
 if [ "x${transporthttps}" != "xinstall ok installed" ]; then
 	if apt-get -qq install -y apt-transport-https > /dev/null; then
 		echo "Transport https support installed"
 	fi
 fi
 
-# GCP packages sign KEY
-if [ ! -f /etc/apt/trusted.gpg.d/google-cloud.gpg ]; then
-	wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
-	echo "GCP sign KEY APT KEYs"
-fi
-
-# Debian 9 Security archive repo sign KEY needed for non-Debian distros
-if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
-	wget -qO- https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
-	echo "Debian 9 Security archive sign KEY APT KEYs"
-fi
-
-# Mongodb-org repo sign KEY
-if [ ! -f /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ]; then
-	wget -qO- https://www.mongodb.org/static/pgp/server-3.6.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg > /dev/null
-	echo "Mongodb sign KEY APT Keys"
-fi
-
-# Unifi sign repo KEY
-if [ ! -f /etc/apt/trusted.gpg.d/unifi-repo.gpg ]; then
-	wget -qO- https://dl.ui.com/unifi/unifi-repo.gpg | gpg --dearmor |  tee /etc/apt/trusted.gpg.d/unifi-repo.gpg > /dev/null
-	echo "Unifi sign KEY APT Keys"
-fi
-
-# Add backports if it doesn't exist
-release=$(lsb_release -c | cut -f 2)
-if [ ${release} ] && [ ! -f /etc/apt/sources.list.d/backports.list ]; then
-	cat > /etc/apt/sources.list.d/backports.list <<_EOF
-deb http://deb.debian.org/debian/ ${release}-backports main
-deb-src http://deb.debian.org/debian/ ${release}-backports main
-_EOF
-	echo "Backports (${release}) REPO added to APT sources"
-fi
-
-# Add Debian 9 security archive repo if it doesn't exist
-# nedeed for java 8 JDK headless on Debian 10/11
-if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
-	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list > /dev/null
-	echo "Debian 9 Security archive REPO added to APT sources"
-fi
-
-# Add Mongodb server 3.6 repo if it doesn't exist
-if [ ! -f /etc/apt/sources.list.d/mongodb-org-3.6.list ]; then
-	echo "deb [signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg] https://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" |  tee /etc/apt/sources.list.d/mongodb-org-3.6.list > /dev/null
-	echo "Mongodb server 3.6 REPO added to APT sources"
-fi
-
-# Add Unifi repo if it doesn't exist
-if [ ! -f /etc/apt/sources.list.d/unifi.list ]; then
-	echo "deb [signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg] https://www.ui.com/downloads/unifi/debian stable ubiquiti" | tee /etc/apt/sources.list.d/unifi.list > /dev/null
-	echo "Unifi REPO added to APT sources"
-fi
-
 # UniFi
-unifi=$(dpkg-query -W --showformat='${Status}\n' unifi > /dev/null)
+unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2> /dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
 	apt-get -qq update -y > /dev/null
 	if apt-get -qq install -y openjdk-8-jre-headless > /dev/null; then
@@ -188,24 +172,8 @@ if [ "x${unifi}" != "xinstall ok installed" ]; then
 	systemctl disable mongodb
 fi
 
-# HAVEGEd is straightforward
-haveged=$(dpkg-query -W --showformat='${Status}\n' haveged > /dev/null)
-if [ "x${haveged}" != "xinstall ok installed" ]; then 
-	if apt-get -qq install -y haveged > /dev/null; then
-		echo "Haveged installed"
-	fi
-fi
-
-# Certbot
-certbot=$(dpkg-query -W --showformat='${Status}\n' certbot > /dev/null)
-if [ "x${certbot}" != "xinstall ok installed" ]; then
-	if (apt-get -qq install -y -t ${release}-backports certbot > /dev/null) || (apt-get -qq install -y certbot > /dev/null); then
-		echo "CertBot installed"
-	fi
-fi
-
 # Lighttpd needs a config file and a reload
-httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd > /dev/null)
+httpd=$(dpkg-query -W --showformat='${Status}\n' lighttpd 2> /dev/null)
 if [ "x${httpd}" != "xinstall ok installed" ]; then
 	if apt-get -qq install -y lighttpd > /dev/null; then
 		cat > /etc/lighttpd/conf-enabled/10-unifi-redirect.conf <<_EOF
@@ -221,7 +189,7 @@ _EOF
 fi
 
 # Fail2Ban needs three files and a reload
-f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban > /dev/null)
+f2b=$(dpkg-query -W --showformat='${Status}\n' fail2ban 2> /dev/null)
 if [ "x${f2b}" != "xinstall ok installed" ]; then 
 	if apt-get -qq install -y fail2ban > /dev/null; then
 			echo "Fail2Ban installed"
@@ -248,6 +216,15 @@ findtime = 3600
 _EOF
 	systemctl reload-or-restart fail2ban
 fi
+
+###########################################################
+#
+# APT maintenance (runs only at reboot)
+#
+apt-get -qq autoremove -y --purge
+apt-get -qq autoclean -y
+apt-get -qq clean -y
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # No required but leaving it here just to be safe
 
 ###########################################################
 #
@@ -355,7 +332,9 @@ After=network-online.target
 Wants=network-online.target
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/gsutil cp https://github.com/Xariwey/GCP-Unifi-Controller/blob/master/startup.sh gs://$bucket
+ExecStart=curl -fsSL https://raw.githubusercontent.com/Xariwey/GCP-Unifi-Controller/master/startup.sh | \
+tee startup.sh > /dev/null | \
+/usr/bin/gsutil cp startup.sh gs://${bucket}
 _EOF
 
 	cat > /etc/systemd/system/stup-script-update.timer <<_EOF
@@ -556,20 +535,3 @@ if [ ! -d /etc/letsencrypt/live/${dnsname} ]; then
 		systemctl start certbotrun.timer
 	fi
 fi
-
-###########################################################
-#
-# APT maintenance (runs only at reboot)
-#
-if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	echo "Upgrading system ..."
-	apt-get -qq update -y > /dev/null
-	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
-	rm /usr/share/misc/apt-upgraded    # Old flag file
-	touch /usr/share/misc/apt-upgraded-1
-	echo "System upgraded"
-fi
-apt-get -qq autoremove -y --purge
-apt-get -qq autoclean -y
-apt-get -qq clean -y
-wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null
