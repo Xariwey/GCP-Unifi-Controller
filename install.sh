@@ -143,14 +143,6 @@ function install() {
 		--target-tags=$name
 
 	echo
-	echo "Enabling VM Manager"
-	gcloud services enable osconfig.googleapis.com
-	gcloud services enable containeranalysis.googleapis.com
-	gcloud compute project-info add-metadata \
-  	--project=$project \
-  	--metadata=enable-osconfig=TRUE
-
-	echo
 	echo "Creating the VM"
 	gcloud compute instances create $name-vm \
 		--description="Unifi Server Controller" \
@@ -168,6 +160,9 @@ function install() {
 		--reservation-affinity=none \
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
+	echo
+	echo "Enabling VM Manager"
+	gcloud services enable containeranalysis.googleapis.com
 	curl -sSO https://cloud.google.com/static/stackdriver/docs/set-permissions.sh
 	(bash set-permissions.sh --project=$project)
 
