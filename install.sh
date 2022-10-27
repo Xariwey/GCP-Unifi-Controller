@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #########################################
 ###                                   ###
 ###              Optional             ###
@@ -22,11 +22,6 @@ dnsname=
 ###                                     ###
 ###########################################
 clear
-if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ]
-	then
-		echo "Edit this file and fill the optional values to fully setup a Domain Name with SSL"
-		sleep 2
-fi
 account=$(gcloud config get core/account)
 project=$(gcloud config get core/project)
 region=$(gcloud config get compute/region)
@@ -161,6 +156,12 @@ function install() {
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
 	echo
+	echo "Reserving IPv4"
+	ipv4=$(gcloud compute instances describe $name-vm --format="get(networkInterfaces[0].accessConfigs[0].natIP)")
+	gcloud compute addresses create $name-ipv4 \
+		--addresses=$ipv4
+
+	echo
 	echo "Enabling VM Manager"
 	gcloud services enable containeranalysis.googleapis.com
 	curl -sSO https://cloud.google.com/static/stackdriver/docs/set-permissions.sh
@@ -237,6 +238,12 @@ function menu() {
 		echo "DDNS URL           : $ddnsurl"
 		echo "Domain Name        : $dnsname"
 		echo
+		if [ -z $timezone ] || [ -z $ddnsurl ] || [ -z $dnsname ]; then
+			echo "Edit this file and fill the optional values to fully setup"
+			echo "the Unifi Controller using a Domain Name with SSL"
+			echo
+		fi
+
 		select action in "${actions[@]}" Quit; do
 	    case $REPLY in
   	   	1) clear; projects; break;;
