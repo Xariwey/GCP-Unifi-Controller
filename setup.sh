@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 clear
 account=$(gcloud config get core/account)
