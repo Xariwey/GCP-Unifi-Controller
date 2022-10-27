@@ -130,16 +130,17 @@ if [ "x${opsagent}" != "xinstall ok installed" ]; then
 fi
 
 # Required preliminiaries
-if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
-	curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # No required but leaving it here just to be safe
-	echo "Looking for system updates"
-	apt-get -qq update -y > /dev/null
-	echo "APT Upgrading..."
-	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
-	rm /usr/share/misc/apt-upgraded    # Old flag file
-	touch /usr/share/misc/apt-upgraded-1
-	echo "System upgraded"
-fi
+# i dont really know if we need this but since we are ugin gcp vm manager
+# to manage system OS upgrades i better let google do they stuff
+#if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+#	echo "Looking for system updates"
+#	apt-get -qq update -y > /dev/null
+#	echo "APT Upgrading..."
+#	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y > /dev/null    # GRUB upgrades require special flags
+#	rm /usr/share/misc/apt-upgraded    # Old flag file
+#	touch /usr/share/misc/apt-upgraded-1
+#	echo "System upgraded"
+#fi
 
 # HAVEGEd is straightforward
 haveged=$(dpkg-query -W --showformat='${Status}\n' haveged 2> /dev/null)
@@ -232,7 +233,6 @@ fi
 apt-get -qq autoremove -y --purge
 apt-get -qq autoclean -y
 apt-get -qq clean -y
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/google-cloud.gpg > /dev/null    # No required but leaving it here just to be safe
 
 ###########################################################
 #
