@@ -88,14 +88,14 @@ fi
 # Nedeed for java 8 JDK headless on Debian 10/11
 # Debian 9 Security archive repo sign KEY needed for non-Debian distros
 # Add Debian 9 security archive repo if it doesn't exist
-if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
-	curl -fsSL https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
-	echo "Added - Debian 9 Security archive sign KEY APT KEYs"
-fi
-if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
-	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list > /dev/null
-	echo "Added - Debian 9 Security archive REPO added to APT sources"
-fi
+# if [ ! -f /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg ]; then
+# 	curl -fsSL https://ftp-master.debian.org/keys/archive-key-9-security.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/debian-archive-key-9-security.gpg > /dev/null
+# 	echo "Added - Debian 9 Security archive sign KEY APT KEYs"
+# fi
+# if [ ! -f /etc/apt/sources.list.d/debian-9-security-updates-archive.list ]; then
+# 	echo "deb https://security.debian.org/debian-security stretch/updates main" | tee /etc/apt/sources.list.d/debian-9-security-updates-archive.list > /dev/null
+# 	echo "Added - Debian 9 Security archive REPO added to APT sources"
+# fi
 
 # Mongodb-org repo sign KEY
 # Add Mongodb server 3.6 repo if it doesn't exist
@@ -171,9 +171,9 @@ fi
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2> /dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
 	apt-get -qq update -y > /dev/null
-	if apt-get -qq install -y openjdk-8-jre-headless > /dev/null; then
-		echo "Java 8 installed"
-	fi
+# 	if apt-get -qq install -y openjdk-8-jre-headless > /dev/null; then
+# 		echo "Java 8 installed"
+# 	fi
 	if apt-get -qq install -y unifi > /dev/null; then
 		echo "Unifi installed"
 	fi
