@@ -96,6 +96,16 @@ if [ ! -f /usr/share/misc/apt-upgraded ]; then
 	echo "System upgraded"
 fi
 
+# Installing Google Ops Agent and OS Agent"
+opsagent=$(dpkg-query -W --showformat='${Status}\n' google-cloud-ops-agent 2> /dev/null)
+if [ "x${opsagent}" != "xinstall ok installed" ]; then 
+	apt-get -qq install -y google-osconfig-agent > /dev/null
+	echo "Google OS Config Agent installed"
+	curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+	(bash add-google-cloud-ops-agent-repo.sh --also-install --uninstall-standalone-logging-agent --uninstall-standalone-monitoring-agent > /dev/null)
+	echo "Google Ops Agent Installed"
+fi
+
 # Unattended-upgrades won't upgrade UniFi over Codename changes
 # This will be run at every reboot, but also requires reboot to be run
 apt-get -qq update -y --allow-releaseinfo-change >/dev/null
