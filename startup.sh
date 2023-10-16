@@ -136,8 +136,8 @@ if [ "x${unifi}" != "xinstall ok installed" ]; then
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg ] http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
 	apt-get -qq update -y >/dev/null
 	
-	if apt-get -qq install -y openjdk-11-jre-headless >/dev/null; then
-		echo "Java 11 installed"
+	if apt-get -qq install -y openjdk-17-jre-headless >/dev/null; then
+		echo "Java 17 installed"
 	fi
 	if apt-get -qq install -y mongodb-org-server >/dev/null; then
 		echo "MongoDB installed"
