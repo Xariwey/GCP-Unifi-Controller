@@ -124,8 +124,10 @@ if [ "x${unifi}" != "xinstall ok installed" ]; then
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ] http://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" > /etc/apt/sources.list.d/mongodb-org-3.6.list
 	curl -LfsS -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg ] http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
-	echo "deb https://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/Debian-11.list
-	echo "deb-src https://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/Debian-11.list
+	cat > /etc/apt/sources.list.d/debian-11.list <<_EOF
+deb https://deb.debian.org/debian bullseye main
+deb-src https://deb.debian.org/debian bullseye main
+_EOF
 	apt-get -qq update -y >/dev/null
 	
 #	if apt-get -qq install -y openjdk-11-jre-headless >/dev/null; then
