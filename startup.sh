@@ -1,17 +1,17 @@
 #! /bin/bash
 
-# Version 2.0.2
+# Version 1.4.5
 # This is a startup script for UniFi Controller on Debian based Google Compute Engine instances.
 # For instructions and how-to:  https://metis.fi/en/2018/02/unifi-on-gcp/
-# For comments and (older) code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
+# For comments and code walkthrough:  https://metis.fi/en/2018/02/gcp-unifi-code/
 #
 # You may use this as you see fit as long as I am credited for my work.
-# (c) 2018-2023 Petri Riihikallio Metis Oy
+# (c) 2018-2022 Petri Riihikallio Metis Oy
 
 ###########################################################
 #
 # Set up logging for unattended scripts and UniFi's MongoDB log
-# Variables $LOG and $MONGOLOG are also used later on in the script.
+# Variables $LOG and $MONGOLOG are used later on in the script.
 #
 LOG="/var/log/unifi/gcp-unifi.log"
 if [ ! -f /etc/logrotate.d/gcp-unifi.conf ]; then
@@ -57,7 +57,7 @@ fi
 #
 ddns=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/ddns-url")
 if [ ${ddns} ]; then
-	curl -fsS ${ddns}
+	curl -fs ${ddns}
 	echo "Dynamic DNS accessed"
 fi
 
@@ -76,9 +76,21 @@ if [ ! -f /swapfile ]; then
 		echo '/swapfile none swap sw 0 0' >> /etc/fstab
 		echo 'tmpfs /run tmpfs rw,nodev,nosuid,size=400M 0 0' >> /etc/fstab
 		mount -o remount,rw,nodev,nosuid,size=400M tmpfs /run
-		systemctl daemon-reload
 		echo "Swap file created"
 	fi
+fi
+
+###########################################################
+#
+# Add backports if it doesn't exist
+#
+release=$(lsb_release -a 2>/dev/null | grep "^Codename:" | cut -f 2)
+if [ ${release} ] && [ ! -f /etc/apt/sources.list.d/backports.list ]; then
+	cat > /etc/apt/sources.list.d/backports.list <<_EOF
+deb http://deb.debian.org/debian/ ${release}-backports main
+deb-src http://deb.debian.org/debian/ ${release}-backports main
+_EOF
+	echo "Backports (${release}) added to APT sources"
 fi
 
 ###########################################################
@@ -87,64 +99,46 @@ fi
 #
 
 # Required preliminiaries
-if [ ! -f /usr/share/misc/apt-upgraded ]; then
-	dpkg --configure -a
+if [ ! -f /usr/share/misc/apt-upgraded-1 ]; then
+	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn    # For CGP packages
+	curl -Lfs https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -    # For CGP packages
 	apt-get -qq update -y >/dev/null
-	apt -qq remove -y man-db >/dev/null
 	DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y >/dev/null    # GRUB upgrades require special flags
-	touch /usr/share/misc/apt-upgraded
+	rm /usr/share/misc/apt-upgraded    # Old flag file
+	touch /usr/share/misc/apt-upgraded-1
 	echo "System upgraded"
 fi
 
-# Installing Google Ops Agent and OS Agent"
-opsagent=$(dpkg-query -W --showformat='${Status}\n' google-cloud-ops-agent 2> /dev/null)
-if [ "x${opsagent}" != "xinstall ok installed" ]; then 
-	apt-get -qq install -y google-osconfig-agent > /dev/null
-	echo "Google OS Config Agent installed"
-	curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
-	(bash add-google-cloud-ops-agent-repo.sh --also-install --uninstall-standalone-logging-agent --uninstall-standalone-monitoring-agent > /dev/null)
-	echo "Google Ops Agent Installed"
-fi
-
-# Unattended-upgrades won't upgrade UniFi over Codename changes
-# This will be run at every reboot, but also requires reboot to be run
-apt-get -qq update -y --allow-releaseinfo-change >/dev/null
-
-# HAVEGEd should be now installed by default
+# HAVEGEd is straightforward
 haveged=$(dpkg-query -W --showformat='${Status}\n' haveged 2>/dev/null)
 if [ "x${haveged}" != "xinstall ok installed" ]; then 
 	if apt-get -qq install -y haveged >/dev/null; then
 		echo "Haveged installed"
 	fi
 fi
-
-# CertBot is straightforward, too
 certbot=$(dpkg-query -W --showformat='${Status}\n' certbot 2>/dev/null)
 if [ "x${certbot}" != "xinstall ok installed" ]; then
-if (apt-get -qq install -y certbot >/dev/null); then
+if (apt-get -qq install -y -t ${release}-backports certbot >/dev/null) || (apt-get -qq install -y certbot >/dev/null); then
 		echo "CertBot installed"
 	fi
 fi
 
-# UniFi needs https support, custom repos and APT update first
+# UniFi needs https support, custom repo and APT update first
+apt-get -qq install -y apt-transport-https >/dev/null
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
-	apt-get -qq install -y ca-certificates apt-transport-https gnupg >/dev/null
-	curl -LfsS https://www.mongodb.org/static/pgp/server-3.6.asc | gpg -o /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg --dearmor
-	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ] http://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" > /etc/apt/sources.list.d/mongodb-org-3.6.list
-	curl -LfsS -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
-	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg ] http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
+	echo "deb http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
+	curl -Lfs -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
 	apt-get -qq update -y >/dev/null
 	
-	if apt-get -qq install -y openjdk-11-jre-headless >/dev/null; then
-		echo "Java 17 installed"
-	fi
-	if apt-get -qq install -y mongodb-org-server >/dev/null; then
-		echo "MongoDB installed"
+	if apt-get -qq install -y openjdk-8-jre-headless >/dev/null; then
+		echo "Java 8 installed"
 	fi
 	if apt-get -qq install -y unifi >/dev/null; then
 		echo "Unifi installed"
 	fi
+	systemctl stop mongodb
+	systemctl disable mongodb
 fi
 
 # Lighttpd needs a config file and a reload
@@ -196,18 +190,19 @@ fi
 #
 # APT maintenance (runs only at reboot)
 #
-apt -qq autoremove -y --purge
+apt -qq autoremove --purge
 apt -qq clean
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
 ###########################################################
 #
 # Set the time zone
 #
-tz=$(curl -fsS -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
+tz=$(curl -fs -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/timezone")
 if [ ${tz} ] && [ -f /usr/share/zoneinfo/${tz} ]; then
 	apt-get -qq install -y dbus >/dev/null
 	let rounds=0
-	while ! systemctl start dbus && [ $rounds -lt 12 ]
+	while [ ! systemctl start dbus && $rounds -lt 12 ]
 	do
 		echo "Trying to start dbus"
 		sleep 15
@@ -280,7 +275,7 @@ _EOF
 	cat > /etc/systemd/system/unifidb-repair.service <<_EOF
 [Unit]
 Description=Repair UniFi MongoDB database at boot
-Before=unifi.service mongod.service
+Before=unifi.service mongodb.service
 After=network-online.target
 Wants=network-online.target
 [Service]
@@ -306,7 +301,7 @@ After=network-online.target
 Wants=network-online.target
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/gsutil rsync -C -r -d /var/lib/unifi/backup gs://$bucket
+ExecStart=/usr/bin/gsutil rsync -r -d /var/lib/unifi/backup gs://$bucket
 _EOF
 
 	cat > /etc/systemd/system/unifi-backup.timer <<_EOF
