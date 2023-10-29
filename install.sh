@@ -142,7 +142,7 @@ function install() {
 	gcloud compute instances create $name-vm \
 		--description="Unifi Server Controller" \
 		--machine-type=e2-micro \
-		--image-family=debian-11 \
+		--image-family=debian-12 \
 		--image-project=debian-cloud \
 		--boot-disk-device-name=$name-bootdisk \
 		--boot-disk-type=pd-standard \
