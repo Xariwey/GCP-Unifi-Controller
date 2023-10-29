@@ -27,7 +27,7 @@ project=$(gcloud config get core/project)
 region=$(gcloud config get compute/region)
 zone=$(gcloud config get compute/zone)
 bucket=$project-bucket
-scripturl=gs://$bucket/startup.sh
+scripturl=gs://$bucket/startup2.sh
 name=unifi-controller
 actions=("Change Project ID" "Change Region/Zone" "Continue")
 PS3="Select an Option: "
@@ -93,7 +93,7 @@ function install() {
 
 	echo
 	echo "Copying startup script into the bucket "
-	gcloud storage cp startup.sh $scripturl
+	gcloud storage cp startup2.sh $scripturl
 
 	echo
 	echo "Creating Firewall Rules for HTTP"

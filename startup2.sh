@@ -124,14 +124,16 @@ if [ "x${unifi}" != "xinstall ok installed" ]; then
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ] http://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" > /etc/apt/sources.list.d/mongodb-org-3.6.list
 	curl -LfsS -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg ] http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
+	echo "deb https://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/Debian-11.list
+	echo "deb-src https://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/Debian-11.list
 	apt-get -qq update -y >/dev/null
 	
-	if apt-get -qq install -y openjdk-11-jre-headless >/dev/null; then
-		echo "Java 11 installed"
-	fi
-	if apt-get -qq install -y mongodb-org-server >/dev/null; then
-		echo "MongoDB installed"
-	fi
+#	if apt-get -qq install -y openjdk-11-jre-headless >/dev/null; then
+#		echo "Java 11 installed"
+#	fi
+#	if apt-get -qq install -y mongodb-org-server >/dev/null; then
+#		echo "MongoDB installed"
+#	fi
 	if apt-get -qq install -y unifi >/dev/null; then
 		echo "Unifi installed"
 	fi
@@ -529,4 +531,3 @@ if [ ! -d /etc/letsencrypt/live/${dnsname} ]; then
 		systemctl start certbotrun.timer
 	fi
 fi
-
