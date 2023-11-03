@@ -120,8 +120,8 @@ fi
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
 if [ "x${unifi}" != "xinstall ok installed" ]; then
 	apt-get -qq install -y ca-certificates apt-transport-https gnupg >/dev/null
-	curl -LfsS https://www.mongodb.org/static/pgp/server-3.6.asc | gpg -o /etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg --dearmor
-	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/mongodb-server-3.6.gpg ] http://repo.mongodb.org/apt/debian stretch/mongodb-org/3.6 main" > /etc/apt/sources.list.d/mongodb-org-3.6.list
+ 	curl -LfsS https://pgp.mongodb.com/server-4.4.asc | gpg -o /etc/apt/trusted.gpg.d/mongodb-server-4.4.gpg --dearmor
+ 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/mongodb-server-4.4.gpg ] http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" > /etc/apt/sources.list.d/mongodb-org-4.4.list
 	curl -LfsS -o /etc/apt/trusted.gpg.d/unifi-repo.gpg https://dl.ubnt.com/unifi/unifi-repo.gpg
 	echo "deb [ signed-by=/etc/apt/trusted.gpg.d/unifi-repo.gpg ] http://www.ubnt.com/downloads/unifi/debian stable ubiquiti" > /etc/apt/sources.list.d/unifi.list
 	cat > /etc/apt/sources.list.d/debian-11.list <<_EOF
