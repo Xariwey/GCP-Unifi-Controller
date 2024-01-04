@@ -149,6 +149,7 @@ function install() {
 		--shielded-vtpm \
 		--shielded-integrity-monitoring \
 		--reservation-affinity=none \
+		--labels=["goog-ops-agent-policy"="v2-x86-template-1-0-0"]
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
 	echo
