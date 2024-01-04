@@ -157,12 +157,12 @@ function install() {
 	gcloud compute addresses create $name-ipv4 \
 		--addresses=$ipv4
 
-	echo
-	echo "Enabling VM Manager"
-	gcloud services enable containeranalysis.googleapis.com
-	curl -sSO https://cloud.google.com/static/stackdriver/docs/set-permissions.sh
-	(bash set-permissions.sh --project=$project)
-
+#	echo
+#	echo "Enabling VM Manager"
+#	gcloud services enable containeranalysis.googleapis.com
+#	curl -sSO https://cloud.google.com/static/stackdriver/docs/set-permissions.sh
+#	(bash set-permissions.sh --project=$project)
+#
 	echo
 	echo "Enabling Ops Agent"
 	cat > agents_to_install.csv <<_EOF
