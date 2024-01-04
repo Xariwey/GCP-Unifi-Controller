@@ -27,7 +27,7 @@ project=$(gcloud config get core/project)
 region=$(gcloud config get compute/region)
 zone=$(gcloud config get compute/zone)
 bucket=$project-bucket
-scripturl=gs://$bucket/startup2.sh
+scripturl=https://raw.githubusercontent.com/Xariwey/GCP-Unifi-Controller/master/startup2.sh
 name=unifi-controller
 actions=("Change Project ID" "Change Region/Zone" "Continue")
 PS3="Select an Option: "
@@ -90,10 +90,6 @@ function install() {
 		--location=$region \
 		--default-storage-class=standard \
 		--public-access-prevention
-
-	echo
-	echo "Copying startup script into the bucket "
-	gcloud storage cp startup2.sh $scripturl
 
 	echo
 	echo "Creating Firewall Rules for HTTP"
@@ -173,7 +169,7 @@ function install() {
 "projects/${project}/zones/$zone/instances/$name-vm","[{""type"":""ops-agent""}]"
 _EOF
 	curl -sSO https://dl.google.com/cloudagents/mass-provision-google-cloud-ops-agents.py
-	python3 mass-provision-google-cloud-ops-agents.py --file agents_to_install.csv
+#	python3 mass-provision-google-cloud-ops-agents.py --file agents_to_install.csv
 
 	echo
 	echo "Creating Auto Patch Deployment for the $name VM"
