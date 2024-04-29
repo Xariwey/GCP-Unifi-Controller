@@ -117,13 +117,13 @@ if [ "x${certbot}" != "xinstall ok installed" ]; then
 fi
 
 # LibSSL 1.1
-libssl=$(dpkg-query -W --showformat='${Status}\n' libssl1.1 2>/dev/null)
-if [ "x${libssl}" != "xinstall ok installed" ]; then
-	curl -LfsS http://http.us.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1w-0+deb11u1_amd64.deb -o libssl1.1.deb
-	if dpkg -i libssl1.1.deb >/dev/null; then
-		echo "LibSSL 1.1 installed"
-	fi
-fi
+# libssl=$(dpkg-query -W --showformat='${Status}\n' libssl1.1 2>/dev/null)
+# if [ "x${libssl}" != "xinstall ok installed" ]; then
+# 	curl -LfsS http://http.us.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1w-0+deb11u1_amd64.deb -o libssl1.1.deb
+# 	if dpkg -i libssl1.1.deb >/dev/null; then
+# 		echo "LibSSL 1.1 installed"
+# 	fi
+# fi
 
 # UniFi needs https support, custom repos and APT update first
 unifi=$(dpkg-query -W --showformat='${Status}\n' unifi 2>/dev/null)
