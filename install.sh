@@ -142,14 +142,14 @@ function install() {
 		--image-project=debian-cloud \
 		--boot-disk-device-name=$name-bootdisk \
 		--boot-disk-type=pd-standard \
-		--boot-disk-size=10GB \
+		--boot-disk-size=30GB \
 		--tags=$name \
 		--scopes=default,storage-full \
 		--shielded-secure-boot \
 		--shielded-vtpm \
 		--shielded-integrity-monitoring \
 		--reservation-affinity=none \
-		--labels=["goog-ops-agent-policy"="v2-x86-template-1-0-0"]
+		--labels=["goog-ops-agent-policy"="v2-x86-template-1-3-0"]
 		--metadata=startup-script-url=$scripturl,ddns-url=$ddnsurl,timezone=$timezone,dns-name=$dnsname,bucket=$bucket
 
 	echo
